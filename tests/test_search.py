@@ -21,13 +21,13 @@ def test_hybrid_uses_rrf_of_vector_and_fulltext():
     query, params = search.hybrid("contoso", "thread-1234", [0.1, 0.2], "refund")
     assert "RANK RRF(" in query
     assert "VectorDistance(c.embedding, @queryVector)" in query
-    assert "FullTextScore(c.messages, @phrase)" in query
+    assert "FullTextScore(c.content, @phrase)" in query
     assert {"name": "@phrase", "value": "refund"} in params
 
 
 def test_keyword_uses_fulltextcontains_and_recency_tiebreak():
     query, params = search.keyword("contoso", "thread-1234", "refund")
-    assert "FULLTEXTCONTAINS(c.messages, @phrase)" in query
+    assert "FULLTEXTCONTAINS(c.content, @phrase)" in query
     assert "ORDER BY c.turnIndex DESC" in query
 
 

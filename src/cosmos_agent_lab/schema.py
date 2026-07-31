@@ -7,7 +7,9 @@ Creates the `turns` container with:
   - a vector indexing policy on /embedding (DiskANN), used by search.py in
     post 3 -- skipped automatically against the Emulator, which does not
     yet support vector policies (see config.supports_vector_search)
-  - a full-text indexing policy on /messages/*/content, used by the
+  - a full-text indexing policy on /content (a flat, denormalized field --
+    Cosmos DB doesn't support wildcard array paths like /messages/*/content
+    in full-text policies), used by the
     keyword and hybrid queries in post 3
 
 Run via `python scripts/provision.py`.
@@ -51,8 +53,8 @@ def _turns_indexing_policy(settings: CosmosSettings) -> dict:
         "indexingMode": "consistent",
         "automatic": True,
         "includedPaths": [{"path": "/*"}],
-        "excludedPaths": [{"path": "/embedding/*"}, {"path": '/"_etag"/?'}],
-        "fullTextIndexes": [{"path": "/messages/*/content"}],
+        "excludedPaths": [{"path": "/embedding/*"}, {"path": "/content/?"}, {"path": '/"_etag"/?'}],
+        "fullTextIndexes": [{"path": "/content"}],
     }
     if settings.supports_vector_search:
         policy["vectorIndexes"] = [{"path": "/embedding", "type": "diskANN"}]
@@ -81,7 +83,7 @@ def ensure_turns_container(
         kwargs["vector_embedding_policy"] = _turns_vector_embedding_policy()
         kwargs["full_text_policy"] = {
             "defaultLanguage": "en-US",
-            "fullTextPaths": [{"path": "/messages/*/content", "language": "en-US"}],
+            "fullTextPaths": [{"path": "/content", "language": "en-US"}],
         }
     return database.create_container_if_not_exists(**kwargs)
 

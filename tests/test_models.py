@@ -18,6 +18,7 @@ def test_round_trip_to_item_and_back():
     assert item["embedding"] == [0.1, 0.2, 0.3]  # top-level, per post 2's pitfall
     assert item["ttl"] == 3600
     assert len(item["messages"]) == 2
+    assert item["content"] == "hi hello"  # flat + full-text-indexable, see models.py
 
     restored = MemoryTurn.from_item(item)
     assert restored.tenant_id == turn.tenant_id

@@ -25,10 +25,13 @@ def test_indexing_policy_includes_vector_index_only_for_real_accounts():
     assert "vectorIndexes" not in emulator_policy
     assert cloud_policy["vectorIndexes"] == [{"path": "/embedding", "type": "diskANN"}]
 
-    # Full-text indexing on message content is expected either way -- it
-    # doesn't depend on vector support.
-    assert emulator_policy["fullTextIndexes"] == [{"path": "/messages/*/content"}]
-    assert cloud_policy["fullTextIndexes"] == [{"path": "/messages/*/content"}]
+    # Full-text indexing on the flat `content` field is expected either way
+    # -- it doesn't depend on vector support. Cosmos DB doesn't support
+    # wildcard array paths (e.g. "/messages/*/content") in full-text
+    # policies or indexes, which is why `content` exists as its own
+    # top-level field on the item -- see models.py.
+    assert emulator_policy["fullTextIndexes"] == [{"path": "/content"}]
+    assert cloud_policy["fullTextIndexes"] == [{"path": "/content"}]
 
 
 def test_vector_embedding_policy_matches_schema_dimensions():

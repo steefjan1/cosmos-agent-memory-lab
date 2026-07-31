@@ -2,7 +2,7 @@
 
 Mirrors the SQL patterns from "Finding the Right Memory: Vector, Full-Text,
 and Hybrid Search in Cosmos DB" exactly, adapted to the turn-based schema
-from post 2 (tenantId, threadId, turnIndex, messages, embedding).
+from post 2 (tenantId, threadId, turnIndex, messages, embedding, content).
 
 Each function returns (query_text, parameters) so callers can either run it
 directly against a live container.query_items(...) call, or -- as the test
@@ -64,7 +64,7 @@ def hybrid(
         "FROM c "
         "WHERE c.tenantId = @tenantId AND c.threadId = @threadId "
         "ORDER BY RANK RRF(VectorDistance(c.embedding, @queryVector), "
-        "FullTextScore(c.messages, @phrase))"
+        "FullTextScore(c.content, @phrase))"
     )
     params = [
         {"name": "@top", "value": top},
@@ -84,7 +84,7 @@ def keyword(
         "SELECT TOP @top c.messages, c.turnIndex "
         "FROM c "
         "WHERE c.tenantId = @tenantId AND c.threadId = @threadId "
-        "  AND FULLTEXTCONTAINS(c.messages, @phrase) "
+        "  AND FULLTEXTCONTAINS(c.content, @phrase) "
         "ORDER BY c.turnIndex DESC"
     )
     params = [

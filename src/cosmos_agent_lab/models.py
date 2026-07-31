@@ -8,6 +8,16 @@ embedding for vector search, and an optional ttl for lifecycle management.
 This module is deliberately dependency-light (stdlib dataclasses only) so it
 can be imported by schema.py, seed.py, search.py, and the tests without
 pulling in the Cosmos SDK.
+
+Full-text search (post 3) requires a flat, top-level string path: Cosmos DB
+does not support wildcard array paths (e.g. "/messages/*/content") in a
+full-text policy or index (confirmed against
+https://learn.microsoft.com/azure/cosmos-db/gen-ai/full-text-search-faq --
+"Wildcard paths (*, []) for arrays aren't supported in full text policies or
+indexes"). So each item also carries a denormalized top-level `content`
+field -- the concatenation of its messages' text -- purely so it has
+something full-text-indexable to point the policy at. `messages` stays the
+structured source of truth; `content` is derived from it in `to_item()`.
 """
 
 from __future__ import annotations
@@ -58,6 +68,9 @@ class MemoryTurn:
             "threadId": self.thread_id,
             "turnIndex": self.turn_index,
             "messages": [m.to_dict() for m in self.messages],
+            # Flat, top-level, full-text-indexable -- see the module
+            # docstring for why "messages" itself can't be the full-text path.
+            "content": " ".join(m.content for m in self.messages),
         }
         if self.embedding is not None:
             # Top-level field, per post 2's "embeddings must be top-level to
