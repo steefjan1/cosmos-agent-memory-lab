@@ -1,0 +1,26 @@
+# Local Cosmos DB Emulator (Linux-based), for posts 2 and 4 (schema, TTL,
+# checkpointing, change feed). Post 3's vector/hybrid search needs a real
+# Azure Cosmos DB account -- the emulator does not support vector indexing
+# policies yet; see cosmos_agent_lab.config.CosmosSettings.supports_vector_search.
+#
+# Usage:
+#   docker compose up -d
+#   python scripts/provision.py
+#
+# The emulator's data explorer is at https://localhost:8081/_explorer/index.html
+# (self-signed certificate -- expect a browser warning, that's expected).
+
+services:
+  cosmosdb-emulator:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    ports:
+      - "8081:8081"
+      - "1234:1234"
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+    volumes:
+      - cosmos-emulator-data:/tmp/cosmos/appdata
+
+volumes:
+  cosmos-emulator-data:

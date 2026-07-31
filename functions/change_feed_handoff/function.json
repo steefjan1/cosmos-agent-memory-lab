@@ -1,0 +1,15 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "type": "cosmosDBTrigger",
+      "name": "documents",
+      "direction": "in",
+      "connectionStringSetting": "COSMOS_CONNECTION_STRING",
+      "databaseName": "agentmemory",
+      "collectionName": "turns",
+      "createLeaseCollectionIfNotExists": true,
+      "leaseCollectionName": "leases"
+    }
+  ]
+}
