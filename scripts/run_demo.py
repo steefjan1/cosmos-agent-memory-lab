@@ -22,7 +22,7 @@ from cosmos_agent_lab import search
 from cosmos_agent_lab.change_feed_demo import process_new_turns
 from cosmos_agent_lab.checkpointer import CosmosDBSaver
 from cosmos_agent_lab.config import get_client, load_settings
-from cosmos_agent_lab.graph import build_graph, run_turn
+from cosmos_agent_lab.graph import build_graph, record_turn_for_handoff, run_turn
 from cosmos_agent_lab.schema import (
     CHECKPOINT_WRITES_CONTAINER,
     CHECKPOINTS_CONTAINER,
@@ -65,6 +65,15 @@ def main() -> None:
     thread_id = f"{SAMPLE_TENANT}:{SAMPLE_THREAD}"
     result = run_turn(app, thread_id, "Can I get a refund on an unopened item?")
     print(f"  final reply: {result['messages'][-1]['content']}")
+
+    # The checkpointer above persists LangGraph's own state so the graph can
+    # resume; it does not write anything into `turns`. This call is the
+    # bridge that makes the change feed step below have something real to
+    # react to -- see record_turn_for_handoff's docstring in graph.py.
+    handoff_item = record_turn_for_handoff(
+        turns, SAMPLE_TENANT, SAMPLE_THREAD, turn_index=100, result=result
+    )
+    print(f"  wrote turn with targetAgent={handoff_item['targetAgent']!r}")
 
     print("--- post 4: change feed handoff replay ---")
     handoffs = process_new_turns(turns, SAMPLE_TENANT, SAMPLE_THREAD)

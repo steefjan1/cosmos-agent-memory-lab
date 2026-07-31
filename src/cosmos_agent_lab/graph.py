@@ -18,6 +18,8 @@ from typing import Any, Literal, TypedDict
 
 from langgraph.graph import END, StateGraph
 
+from .models import MemoryTurn, Message
+
 
 class AgentState(TypedDict):
     messages: list[dict[str, Any]]
@@ -82,3 +84,41 @@ def run_turn(app: Any, thread_id: str, user_text: str) -> AgentState:
         config=config,
     )
     return result
+
+
+def record_turn_for_handoff(
+    turns_container: Any,
+    tenant_id: str,
+    thread_id: str,
+    turn_index: int,
+    result: AgentState,
+) -> dict[str, Any]:
+    """Persist a graph result as a `turns` item, so change_feed_demo has
+    something to react to (post 4).
+
+    The checkpointer above persists LangGraph's *own* state (for resuming
+    the graph); it does not write anything into the `turns` container --
+    those are two separate concerns. This function is the bridge between
+    them, standing in for the line in the blog post's Function example
+    ("The triage agent sets targetAgent on the turn it writes"). Real
+    deployments would typically have the triage node itself perform this
+    write as a tool call or side effect, rather than a separate step after
+    `run_turn` the way this demo does it for clarity.
+    """
+    routed_to_specialist = any(
+        m.get("entityId") == "specialist-agent" for m in result["messages"]
+    )
+    turn = MemoryTurn(
+        tenant_id=tenant_id,
+        thread_id=thread_id,
+        turn_index=turn_index,
+        messages=[
+            Message(role=m["role"], content=m["content"], entity_id=m.get("entityId"))
+            for m in result["messages"]
+        ],
+        ttl=3600,
+    )
+    item = turn.to_item()
+    item["targetAgent"] = "specialist" if routed_to_specialist else None
+    turns_container.upsert_item(item)
+    return item
